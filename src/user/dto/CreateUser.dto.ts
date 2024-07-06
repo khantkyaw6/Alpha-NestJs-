@@ -33,9 +33,5 @@ export class CreateUserDto {
   })
   gender: 'male' | 'female';
 
-  @IsNotEmpty({
-    message: 'User Password is required',
-  })
-  @Length(4, 20)
   password: string;
 }

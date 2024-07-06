@@ -11,6 +11,8 @@ import {
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/CreateUser.dto';
+import { UpdateUserDto } from './dto/UpdateUser.dto';
+import { UpdateUserPasswordDto } from './dto/UpdateUserPassword.dto';
 
 @Controller('user')
 export class UserController {
@@ -34,8 +36,17 @@ export class UserController {
 
   @Patch('/:id')
   @UsePipes(ValidationPipe)
-  async update(@Param('id') id: number, @Body() userUpdateData: CreateUserDto) {
+  async update(@Param('id') id: number, @Body() userUpdateData: UpdateUserDto) {
     return await this.userService.update(id, userUpdateData);
+  }
+
+  @Patch('/:id/password')
+  @UsePipes(ValidationPipe)
+  async updatePassword(
+    @Param('id') id: number,
+    @Body() newPasswordData: UpdateUserPasswordDto,
+  ) {
+    return await this.userService.updatePassword(id, newPasswordData);
   }
 
   @Delete('/:id')
