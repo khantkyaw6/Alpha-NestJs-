@@ -1,17 +1,14 @@
 import {
   ConflictException,
-  Get,
   Injectable,
   NotFoundException,
-  Post,
 } from '@nestjs/common';
-import { CreateUserDto } from './dto/CreateUser.dto';
-import { User } from './user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { CreateUserDto } from './dto/CreateUser.dto';
 import { UpdateUserDto } from './dto/UpdateUser.dto';
 import { UpdateUserPasswordDto } from './dto/UpdateUserPassword.dto';
-import * as bcrypt from 'bcrypt';
+import { User } from './user.entity';
 import { PasswordUtil } from 'src/utils/password.utils';
 
 @Injectable()
@@ -23,25 +20,24 @@ export class UserService {
   async index(): Promise<{
     isSuccess: boolean;
     message: string;
-    statusCode: Number;
+    statusCode: number;
     data: User[];
   }> {
-    const user = await this.userRepository.find({
+    const users = await this.userRepository.find({
       where: { isDeleted: false },
     });
-    const resObj = {
+
+    return {
       isSuccess: true,
       statusCode: 200,
       message: 'All User list',
-      data: user,
+      data: users,
     };
-    return resObj;
   }
 
-  async store(user: CreateUserDto): Promise<{
-    isSuccess: boolean;
-    message: string;
-  }> {
+  async store(
+    user: CreateUserDto,
+  ): Promise<{ isSuccess: boolean; message: string }> {
     const existingUser = await this.userRepository.findOne({
       where: { email: user.email },
     });
@@ -53,19 +49,15 @@ export class UserService {
     }
 
     const defaultPassword = 'helloworld';
-
     const hashedPassword = await PasswordUtil.hashPassword(defaultPassword);
-
     user.password = hashedPassword;
-    const createUser = await this.userRepository.save(user);
 
-    if (createUser) {
-      const resObj = {
-        isSuccess: true,
-        message: 'User created successfully',
-      };
-      return resObj;
-    }
+    await this.userRepository.save(user);
+
+    return {
+      isSuccess: true,
+      message: 'User created successfully',
+    };
   }
 
   async show(id: number): Promise<{
@@ -74,27 +66,25 @@ export class UserService {
     statusCode: number;
     data: User;
   }> {
-    const user = await this.userRepository.findOne({ where: { id } });
+    const user = await this.userRepository.findOne({
+      where: { id, isDeleted: false },
+    });
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
-    const resObj = {
+
+    return {
       isSuccess: true,
       statusCode: 200,
       message: 'User Detail',
       data: user,
     };
-    return resObj;
   }
 
   async update(
     id: number,
     userData: UpdateUserDto,
-  ): Promise<{
-    isSuccess: boolean;
-    message: string;
-    statusCode: number;
-  }> {
+  ): Promise<{ isSuccess: boolean; message: string; statusCode: number }> {
     const user = await this.userRepository.findOne({
       where: { id, isDeleted: false },
     });
@@ -104,22 +94,17 @@ export class UserService {
 
     await this.userRepository.update(id, userData);
 
-    const resObj = {
+    return {
       isSuccess: true,
       statusCode: 200,
       message: 'User updated successfully',
     };
-    return resObj;
   }
 
   async updatePassword(
     id: number,
     newPasswordDto: UpdateUserPasswordDto,
-  ): Promise<{
-    isSuccess: boolean;
-    message: string;
-    statusCode: number;
-  }> {
+  ): Promise<{ isSuccess: boolean; message: string; statusCode: number }> {
     const user = await this.userRepository.findOne({
       where: { id, isDeleted: false },
     });
@@ -128,7 +113,6 @@ export class UserService {
     }
 
     const { newPassword, oldPassword } = newPasswordDto;
-
     const isMatch = await PasswordUtil.comparePassword(
       oldPassword,
       user.password,
@@ -137,18 +121,18 @@ export class UserService {
     if (!isMatch) throw new ConflictException('Old password does not match');
 
     user.password = await PasswordUtil.hashPassword(newPassword);
-
     await this.userRepository.save(user);
 
-    const resObj = {
+    return {
       isSuccess: true,
       statusCode: 200,
       message: 'User Password Changed',
     };
-    return resObj;
   }
 
-  async delete(id: number) {
+  async delete(
+    id: number,
+  ): Promise<{ isSuccess: boolean; message: string; statusCode: number }> {
     const user = await this.userRepository.findOne({
       where: { id, isDeleted: false },
     });
@@ -159,11 +143,10 @@ export class UserService {
 
     await this.userRepository.update(id, { isDeleted: true });
 
-    const resObj = {
+    return {
       isSuccess: true,
       statusCode: 200,
       message: 'User deleted successfully',
     };
-    return resObj;
   }
 }
