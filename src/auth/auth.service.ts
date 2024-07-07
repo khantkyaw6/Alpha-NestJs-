@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -8,6 +9,7 @@ import { User } from 'src/user/user.entity';
 import { Repository } from 'typeorm';
 import { LoginUserDto } from './dto/Login.dto';
 import { PasswordUtil } from 'src/utils/password.utils';
+import { RegisterUserDto } from './dto/Register.dto';
 
 @Injectable()
 export class AuthService {
@@ -41,6 +43,34 @@ export class AuthService {
       isSuccess: true,
       message: 'Login Successfuly',
       data: checkUser,
+    };
+    return resObj;
+  }
+
+  async register(
+    registerData: RegisterUserDto,
+  ): Promise<{ isSuccess: boolean; message: string }> {
+    const checkUser = await this.userRepository.findOne({
+      where: { email: registerData.email },
+    });
+
+    if (checkUser)
+      throw new ConflictException(
+        `A user with ${checkUser.email} email already exists.`,
+      );
+
+    const hashedPassword = await PasswordUtil.hashPassword(
+      registerData.password,
+    );
+    registerData.password = hashedPassword;
+    const createUser = await this.userRepository.save(registerData);
+
+    if (!createUser)
+      throw new ConflictException('Error occur in register, Please Try Again!');
+
+    const resObj = {
+      isSuccess: true,
+      message: 'User Registered successfully',
     };
     return resObj;
   }
