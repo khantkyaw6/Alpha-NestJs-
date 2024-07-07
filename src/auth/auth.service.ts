@@ -23,7 +23,7 @@ export class AuthService {
     data: User;
   }> {
     const checkUser = await this.userRepository.findOne({
-      where: { email: loginData.email },
+      where: { email: loginData.email, isDeleted: false },
     });
 
     if (!checkUser)
